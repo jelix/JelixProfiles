@@ -1,0 +1,9 @@
+TAGS
+.DS_Store
+vendor/
+composer.lock
+tests/temp/*
+!tests/temp/.dummy
+.idea
+.php_cs.cache
+tests/.phpunit.result.cache

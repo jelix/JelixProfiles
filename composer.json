@@ -1,0 +1,30 @@
+{
+    "name": "jelix/profiles",
+    "type": "library",
+    "description": "API to manage access and credentials data",
+    "keywords": ["database", "profiles", "credentials", "access"],
+    "homepage": "http://jelix.org",
+    "license": "LGPL-2.1",
+    "authors": [
+        {
+            "name": "Laurent Jouanneau",
+            "email": "laurent@jelix.org"
+        }
+    ],
+    "require": {
+        "php": ">=7.2",
+        "jelix/inifile" : "^3.2.3"
+    },
+    "require-dev" : {
+        "phpunit/phpunit": "8.5.*"
+    },
+    "archive": {
+        "exclude": ["/tests"]
+    },
+    "autoload": {
+        "psr-4" : {
+            "Jelix\\Profiles\\" : "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
