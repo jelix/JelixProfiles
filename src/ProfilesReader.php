@@ -42,8 +42,7 @@ class ProfilesReader
     public function readFromFile($iniFile, $cacheFile = '')
     {
         if ($cacheFile != '' && file_exists($cacheFile) && filemtime($iniFile) <= filemtime($cacheFile)) {
-            $sources = parse_ini_file($cacheFile, true, INI_SCANNER_TYPED);
-            $profiles = $this->compile($sources);
+            $profiles = parse_ini_file($cacheFile, true, INI_SCANNER_TYPED);
         } else {
             $sources = parse_ini_file($iniFile, true, INI_SCANNER_TYPED);
             $profiles = $this->compile($sources);
