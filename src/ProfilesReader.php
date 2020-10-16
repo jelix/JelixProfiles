@@ -11,11 +11,20 @@ namespace Jelix\Profiles;
 
 class ProfilesReader
 {
-    protected $plugins = array();
+    /**
+     * @var array|callable
+     */
+    protected $plugins = [];
 
     /**
      * ProfilesContainer constructor.
-     * @param array $plugins
+     * @param array|callable $plugins
+     *          it should be an array containing items like
+     *              'type of profile' => 'class name'
+     *           or  'type of profile' => object
+     *          The classes and object should inherits from ReaderPlugin.
+     *        $plugins may be also a function that take a type of profile as
+     *        parameter, and returns an object inheriting from ReaderPlugin
      */
     public function __construct($plugins = [])
     {
@@ -96,12 +105,20 @@ class ProfilesReader
      */
     public function getPlugin($name)
     {
-        if (!isset($this->plugins[$name])) {
-            $this->plugins[$name] = new ReaderPlugin($name);
-        } elseif (is_string($this->plugins[$name])) {
-            $className = $this->plugins[$name];
-            $this->plugins[$name] = new $className($name);
+        if (is_array($this->plugins)) {
+            if (!isset($this->plugins[$name])) {
+                $this->plugins[$name] = new ReaderPlugin($name);
+            } elseif (is_string($this->plugins[$name])) {
+                $className = $this->plugins[$name];
+                $this->plugins[$name] = new $className($name);
+            }
+            return $this->plugins[$name];
         }
-        return $this->plugins[$name];
+        if (is_callable($this->plugins)) {
+            return call_user_func($this->plugins, $name);
+        }
+        else {
+            return new ReaderPlugin($name);
+        }
     }
 }

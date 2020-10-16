@@ -10,7 +10,7 @@
 namespace Jelix\Profiles;
 
 /**
- * default plugin for jProfilesCompiler, and base plugin for other plugins.
+ * default plugin for ProfilesReader, and base plugin for other plugins.
  */
 class ReaderPlugin
 {
