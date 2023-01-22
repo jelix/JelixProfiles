@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Version 1.2.1
+-------------
+
+- Fix some regressions
+- Fix a performance issue: reader plugins should not be loaded several times per category
+
 Version 1.2.0
 -------------
 

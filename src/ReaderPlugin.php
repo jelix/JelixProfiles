@@ -82,7 +82,7 @@ class ReaderPlugin
                 $profile = array_merge($this->common, $profile);
             }
 
-            if (!isset($profile['_name']) || $profile['_name'] == '__common__') {
+            if (!isset($profile['_name']) || $profile['_name'] == '' || $profile['_name'] == '__common__') {
                 $profile['_name'] = $name;
             }
 

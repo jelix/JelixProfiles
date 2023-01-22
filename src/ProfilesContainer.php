@@ -176,6 +176,9 @@ class ProfilesContainer
             if (isset($this->profiles[$category]['__common__'])) {
                 $plugin->setCommon($this->profiles[$category]['__common__']);
             }
+            if (isset($this->profiles[$category])) {
+                $plugin->addProfiles($this->profiles[$category]);
+            }
             $plugin->addProfile($name, $params);
             $plugin->getProfiles($this->profiles);
         }
