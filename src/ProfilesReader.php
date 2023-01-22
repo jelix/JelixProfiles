@@ -83,18 +83,21 @@ class ProfilesReader
             }
             if (strpos($name, ':') === false) {
                 // category section: it contains aliases
-                $plugin = $this->getPlugin($name);
-                $plugin->setAliases($profile);
+                if (!isset($plugins[$name])) {
+                    $plugins[$name] = $this->getPlugin($name);
+                }
+                $plugins[$name]->setAliases($profile);
             } else {
                 list($category, $pname) = explode(':', $name);
-                $plugin = $this->getPlugin($category);
+                if (!isset($plugins[$category])) {
+                    $plugins[$category] = $this->getPlugin($category);
+                }
                 if ($pname == '__common__') {
-                    $plugin->setCommon($profile);
+                    $plugins[$category]->setCommon($profile);
                 } else {
-                    $plugin->addProfile($pname, $profile);
+                    $plugins[$category]->addProfile($pname, $profile);
                 }
             }
-            $plugins[] = $plugin;
         }
         $profiles = array();
         foreach ($plugins as $plugin) {
