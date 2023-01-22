@@ -9,12 +9,16 @@ class profilesIniTest extends \PHPUnit\Framework\TestCase
         if (file_exists(__DIR__.'/temp/test1.cache.ini')) {
             unlink(__DIR__.'/temp/test1.cache.ini');
         }
+        if (file_exists(__DIR__.'/temp/test1.cache.json')) {
+            unlink(__DIR__.'/temp/test1.cache.json');
+        }
     }
 
     function testProfileIni()
     {
         $iniFile =  __DIR__.'/profiles/test1.ini';
         $cacheFile = __DIR__.'/temp/test1.cache.ini';
+        $realCacheFile = __DIR__.'/temp/test1.cache.json';
         $reader   = new \Jelix\Profiles\ProfilesReader();
         $profiles = $reader->readFromFile(
             $iniFile,
@@ -27,7 +31,7 @@ class profilesIniTest extends \PHPUnit\Framework\TestCase
             "_name"=>"testapp"
         );
 
-        $this->assertTrue(file_exists($cacheFile));
+        $this->assertTrue(file_exists($realCacheFile));
 
         $profile = $profiles->get('jdb');
         $this->assertEquals($expectedProfile, $profile);

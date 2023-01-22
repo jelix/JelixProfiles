@@ -145,7 +145,7 @@ In the code of the component which uses JelixProfiles:
 
 ```php
 $iniFile = '/somewhere/profiles.ini';
-$cacheFile = '/somewhere/profiles.cache.ini';
+$cacheFile = '/somewhere/profiles.cache.json';
 
 $reader = new \Jelix\Profiles\ProfilesReader();
 
@@ -180,7 +180,7 @@ Example:
 
 // let's retrieve a profiles container
 $iniFile = '/somewhere/profiles.ini';
-$cacheFile = '/somewhere/profiles.cache.ini';
+$cacheFile = '/somewhere/profiles.cache.json';
 $reader = new \Jelix\Profiles\ProfilesReader();
 /** @var \Jelix\Profiles\ProfilesContainer $profiles */
 $profiles = $reader->readFromFile($iniFile, $cacheFile);

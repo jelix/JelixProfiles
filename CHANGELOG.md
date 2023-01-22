@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Version 1.2.0
+-------------
+
+Rework internal storage to be more efficient. Format of the cache file has changed.
+
 Version 1.1.0
 -------------
 

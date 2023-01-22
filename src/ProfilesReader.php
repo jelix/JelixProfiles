@@ -2,7 +2,7 @@
 
 /**
  * @author Laurent Jouanneau
- * @copyright 2011-2020 Laurent Jouanneau
+ * @copyright 2011-2023 Laurent Jouanneau
  *
  * @see        https://jelix.org
  * @licence     GNU Lesser General Public Licence see LICENCE file or http://www.gnu.org/licenses/lgpl.html
@@ -22,7 +22,7 @@ class ProfilesReader
      *          it should be an array containing items like
      *              'type of profile' => 'class name'
      *           or  'type of profile' => object
-     *          The classes and object should inherits from ReaderPlugin.
+     *          The classes and object should inherit from ReaderPlugin.
      *        $plugins may be also a function that take a type of profile as
      *        parameter, and returns an object inheriting from ReaderPlugin
      */
@@ -41,13 +41,18 @@ class ProfilesReader
      */
     public function readFromFile($iniFile, $cacheFile = '')
     {
+        if (preg_match('/\\.ini$/', $cacheFile)) {
+            // old format
+            $cacheFile = str_replace('.ini', '.json', $cacheFile);
+        }
+
         if ($cacheFile != '' && file_exists($cacheFile) && filemtime($iniFile) <= filemtime($cacheFile)) {
-            $profiles = parse_ini_file($cacheFile, true, INI_SCANNER_TYPED);
+            $profiles = json_decode(file_get_contents($cacheFile), JSON_OBJECT_AS_ARRAY);
         } else {
             $sources = parse_ini_file($iniFile, true, INI_SCANNER_TYPED);
             $profiles = $this->compile($sources);
             if ($cacheFile != '') {
-                \Jelix\IniFile\Util::write($profiles, $cacheFile);
+                file_put_contents($cacheFile, json_encode($profiles));
             }
         }
         return new ProfilesContainer($profiles, $this);

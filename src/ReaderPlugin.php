@@ -2,7 +2,7 @@
 
 /**
  * @author      Laurent Jouanneau
- * @copyright   2015-2020 Laurent Jouanneau
+ * @copyright   2015-2023 Laurent Jouanneau
  *
  * @see        https://jelix.org
  * @licence     GNU Lesser General Public Licence see LICENCE file or http://www.gnu.org/licenses/lgpl.html
@@ -59,24 +59,38 @@ class ReaderPlugin
     }
 
     /**
+     * Add a list of profiles
+     * @param array $profiles
+     * @return void
+     */
+    public function addProfiles(array $profiles)
+    {
+        $this->profiles = array_merge($this->profiles, $profiles);
+    }
+
+    /**
      * @param array the array in which analysed profiles should be stored
      * @param mixed $profiles
      */
     public function getProfiles(&$profiles)
     {
         if (count($this->common)) {
-            $profiles[$this->category.':__common__'] = $this->common;
+            $profiles[$this->category]['__common__'] = $this->common;
         }
         foreach ($this->profiles as $name => $profile) {
             if (count($this->common)) {
                 $profile = array_merge($this->common, $profile);
             }
-            $profile['_name'] = $name;
-            $profiles[$this->category.':'.$name] = $this->consolidate($profile);
+
+            if (!isset($profile['_name']) || $profile['_name'] == '__common__') {
+                $profile['_name'] = $name;
+            }
+
+            $profiles[$this->category][$name] = $this->consolidate($profile);
         }
         foreach ($this->aliases as $alias => $profileName) {
-            if (isset($profiles[$this->category.':'.$profileName])) {
-                $profiles[$this->category.':'.$alias] = $profiles[$this->category.':'.$profileName];
+            if (isset($profiles[$this->category][$profileName])) {
+                $profiles[$this->category][$alias] = $profiles[$this->category][$profileName];
             }
         }
     }

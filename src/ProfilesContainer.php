@@ -3,7 +3,7 @@
 /**
  * @author Laurent Jouanneau
  * @contributor Yannick Le Guédart, Julien Issler
- * @copyright 2011-2020 Laurent Jouanneau, 2007 Yannick Le Guédart, 2011 Julien Issler
+ * @copyright 2011-2023 Laurent Jouanneau, 2007 Yannick Le Guédart, 2011 Julien Issler
  *
  * @see        https://jelix.org
  * @licence     GNU Lesser General Public Licence see LICENCE file or http://www.gnu.org/licenses/lgpl.html
@@ -66,18 +66,17 @@ class ProfilesContainer
         if ($name == '') {
             $name = 'default';
         }
-        $section = $category.':'.$name;
 
         // the name attribute created in this method will be the name of the connection
         // in the connections pool. So profiles of aliases and real profiles should have
         // the same name attribute.
 
-        if (isset($this->profiles[$section])) {
-            return $this->profiles[$section];
+        if (isset($this->profiles[$category][$name])) {
+            return $this->profiles[$category][$name];
         }
         // if the profile doesn't exist, we take the default one
-        if (!$noDefault && isset($this->profiles[$category.':default'])) {
-            return $this->profiles[$category.':default'];
+        if (!$noDefault && isset($this->profiles[$category]['default'])) {
+            return $this->profiles[$category]['default'];
         }
 
         if ($name == 'default') {
@@ -162,8 +161,8 @@ class ProfilesContainer
         }
 
         if (is_string($params)) {
-            if (isset($this->profiles[$category.':'.$params])) {
-                $this->profiles[$category.':'.$name] = $this->profiles[$category.':'.$params];
+            if (isset($this->profiles[$category][$params])) {
+                $this->profiles[$category][$name] = $this->profiles[$category][$params];
             } else {
                 throw new Exception('Unknown profile "'.$params.'" for "'.$category.'"');
             }
@@ -174,8 +173,8 @@ class ProfilesContainer
                 $plugin = new ReaderPlugin($category);
             }
 
-            if (isset($this->profiles[$category.':__common__'])) {
-                $plugin->setCommon($this->profiles[$category.':__common__']);
+            if (isset($this->profiles[$category]['__common__'])) {
+                $plugin->setCommon($this->profiles[$category]['__common__']);
             }
             $plugin->addProfile($name, $params);
             $plugin->getProfiles($this->profiles);
@@ -189,7 +188,7 @@ class ProfilesContainer
 
     /**
      * clear the loaded profiles to force to reload the profiles file.
-     * WARNING: it destroy all objects stored in the pool!
+     * WARNING: it destroys all objects stored in the pool!
      */
     public function clear()
     {
