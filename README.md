@@ -168,7 +168,7 @@ $myDatabaseConnection = new Database(
 ## Virtual profile
 
 You can use a profile which is not declared into the ini file. So
-you can use a connection whose informations are known only during the execution.
+you can use a connection whose information are known only during the execution.
 
 A virtual profile must be created before using your component. Use
 `createVirtualProfile()` method of the object `ProfilesContainer` and pass

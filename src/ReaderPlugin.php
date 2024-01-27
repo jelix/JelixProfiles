@@ -2,7 +2,7 @@
 
 /**
  * @author      Laurent Jouanneau
- * @copyright   2015-2023 Laurent Jouanneau
+ * @copyright   2015-2024 Laurent Jouanneau
  *
  * @see        https://jelix.org
  * @licence     GNU Lesser General Public Licence see LICENCE file or http://www.gnu.org/licenses/lgpl.html
@@ -12,7 +12,7 @@ namespace Jelix\Profiles;
 /**
  * default plugin for ProfilesReader, and base plugin for other plugins.
  */
-class ReaderPlugin
+class ReaderPlugin implements ProfilePluginInterface
 {
     protected $aliases = array();
 
@@ -75,6 +75,7 @@ class ReaderPlugin
     public function getProfiles(&$profiles)
     {
         if (count($this->common)) {
+            // we need it for virtual profiles
             $profiles[$this->category]['__common__'] = $this->common;
         }
         foreach ($this->profiles as $name => $profile) {

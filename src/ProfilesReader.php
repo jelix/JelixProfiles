@@ -2,7 +2,7 @@
 
 /**
  * @author Laurent Jouanneau
- * @copyright 2011-2023 Laurent Jouanneau
+ * @copyright 2011-2024 Laurent Jouanneau
  *
  * @see        https://jelix.org
  * @licence     GNU Lesser General Public Licence see LICENCE file or http://www.gnu.org/licenses/lgpl.html
@@ -22,7 +22,7 @@ class ProfilesReader
      *          it should be an array containing items like
      *              'type of profile' => 'class name'
      *           or  'type of profile' => object
-     *          The classes and object should inherit from ReaderPlugin.
+     *          The classes and object should implement ProfilePluginInterface.
      *        $plugins may be also a function that take a type of profile as
      *        parameter, and returns an object inheriting from ReaderPlugin
      */
@@ -71,7 +71,10 @@ class ProfilesReader
         return new ProfilesContainer($profiles, $this);
     }
 
-
+    /**
+     * @param array $sources ini content as given by parse_ini_* functions
+     * @return array all profiles parameters
+     */
     protected function compile(&$sources)
     {
         $plugins = array();
@@ -108,7 +111,7 @@ class ProfilesReader
 
     /**
      * @param string $name
-     * @return ReaderPlugin
+     * @return ProfilePluginInterface
      */
     public function getPlugin($name)
     {
