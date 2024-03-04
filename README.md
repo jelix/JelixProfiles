@@ -1,12 +1,12 @@
 API to manage profiles containing access and credentials data.
 
-A profile contains informations to access to a service. A service could be
-a database, a web API. Inside an application, you can have different profiles
+A profile contains information to access to a service. A service could be
+a database, a web API for axampe. Inside an application, you can have different profiles
 for the same type of service. 
 
-JelixProfiles allows to indicates those profiles into an ini file. All credentials
-are then stored into a single file. When a component of your application needs 
-informations about a profile, it will use the JelixProfiles.
+JelixProfiles allows to indicate those profiles into an ini file. All credentials
+are then stored into a single file. When a component of your application (let's call it a "connector")
+needs information about a profile, it will use JelixProfiles.
 
 # installation
 
@@ -31,7 +31,7 @@ single connection. Sections names are composed of two names, separated by a ":":
 
 - first name is the name of the connection type, (often corresponding to 
   the composant name)
-- second name is a name of your choice. However two names have a special
+- second name is a name of your choice. However, two names have a special
   meaning: `default` indicates the default profile to use if the profile name
   is not given. And `__common__`, described below. 
 
@@ -164,6 +164,9 @@ $myDatabaseConnection = new Database(
 
 ```
 
+Note that you have to give a cache file to `readFromFile`. It allows JelixProfiles to save extra parameters
+computed during the loading of the ini file. 
+
 
 ## Virtual profile
 
@@ -200,9 +203,155 @@ $profiles->createVirtualProfile('jdb', 'my_profil', $params);
 
 // somewhere else
 $profile = $profiles->get('jdb', 'my_profil');
-...
+
+//...
 ```
 
 Of course, all parameters defined in a `__common__` profile apply on virtual profiles.
 
 
+# Using plugins to check parameters
+
+The connector, the object that use a profile, may expect to have specific parameters. It may have to check if parameters are ok
+before using them. It even may have to "calculate" some other parameters, depending on values it finds into given parameters.
+
+To avoid to do these check or calculation each time the connector is instantiated, there is a solution into JelixProfiles
+to process these things during the first read of the profiles file, then final parameters are stored into the
+cache file of profiles. 
+
+You can provide a plugin that will do these checks and calculations for a specific category of profiles.
+This is a class which should inherits from `Jelix\Profiles\ReaderPlugin`, and implements the `consolidate` method
+which receives the profile parameters as an array, and which returns the completed profile.
+
+Example:
+
+```php
+// example of a plugin that process a profile containing access parameters to an SQL database
+class myDbPlugin extends \Jelix\Profiles\ReaderPlugin
+{
+
+    protected function consolidate($profile)
+    {
+        $newProfile = $profile;
+        // Check that the `host` parameter does exist
+        if (!isset($profile['driver']) || $profile['driver'] == '' ||
+            !isset($profile['host']) || $profile['host'] == '' ||
+            !isset($profile['database']) || $profile['database'] == ''
+        ) {
+            throw new  \Exception('host or database are missing from the profile');
+        }
+        
+        // check if port is present, if not, let's set a default value
+        if (!isset($profile['port']) {
+            $profile['port'] = 1234;        
+        }
+
+        if ($driver == 'pgsql') {
+            // let's generate a connection string
+            $newProfile['connectionstr'] = 'host='.$profile['host'].';port='.$profile['port'].'database='.$profile['database'];        
+        }
+
+        // here you probably want to do more checks etc, but for the example, it is enough.
+
+        // return a new profile, that is ready to be used by your database connection object without checking
+        // parameters or calculate connectionstr, at each http requests, because all these parameters will be stored
+        // into a cache by ProfilesReader
+        return $newProfile;
+    }
+}
+
+```
+
+Next, you have to indicate this plugin to ProfilesReader, by giving the list of plugins corresponding to each
+category.
+
+```php
+$reader = new \Jelix\Profiles\ProfilesReader([
+    // category name => plugin class name
+    'db' => 'myDbPlugin'
+]);
+```
+
+Another way, is to provide a callback function which will return the plugin corresponding to the given category.
+It is useful if your plugin have a specific constructor, or if the class is loaded in a specific way.
+
+```php
+
+
+class myDbPlugin extends \Jelix\Profiles\ReaderPlugin
+{
+    // for the example, let's redefine the constructor to have a different constructor than ReaderPlugin...
+    public function __construct() {}
+ 
+    // ...   
+}
+
+$reader = new \Jelix\Profiles\ProfilesReader(function($category) {
+    if ($category == 'db') {
+        return new myDbPlugin();
+    }
+    // always return a ReaderPlugin object for unsupported plugins. 
+    return new \Jelix\Profiles\ReaderPlugin($category);
+});
+```
+
+# Using plugins to instantiate automatically connectors
+
+We saw that you can retrieve a profile, and then you have to give it to your connector object:
+
+```php
+
+$profile = $profiles->get('jdb', 'default');
+
+$myDatabaseConnection = new Database(
+    $profile['driver'],
+    $profile['host'],
+    $profile['login'],
+    $profile['password']
+);
+
+```
+
+`ProfilesContainer` has a method to instantiate automatically the connector corresponding to the profile, and it
+allows also to use the same connector object during all the process of an http request. And your code is less heavy:
+
+```php
+$myDatabaseConnection = $profiles->getConnector('jdb', 'default');
+```
+
+In order to use this method, the plugin must implement the `Jelix\Profiles\ProfileInstancePluginInterface`. It has
+two methods, `getInstanceForPool($name, $profile)` and `closeInstanceForPool($name, $instance)`.
+
+The first one is to instantiate the connector object. It is called by `getConnector`. The second method should
+terminate the connector object. For example, if the connector object maintain a connection to a database, 
+`closeInstanceForPool()` should call its method that close the connection.
+
+```php
+class myDbPlugin extends \Jelix\Profiles\ReaderPlugin
+{
+    protected function consolidate($profile)
+    {
+        // ...
+    }
+    
+    public function getInstanceForPool($name, $profile)
+    {
+        return new Database(
+          $profile['driver'],
+          $profile['host'],
+          $profile['login'],
+          $profile['password']
+        );
+    }
+    
+    /**
+     * @param string $name
+     * @param Database $instance
+     * @return void
+     */
+    public function closeInstanceForPool($name, $instance)
+    {
+        $instance->close()
+    }
+}
+```

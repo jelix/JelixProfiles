@@ -3,7 +3,7 @@
 /**
  * @author Laurent Jouanneau
  * @contributor Yannick Le Guédart, Julien Issler
- * @copyright 2011-2023 Laurent Jouanneau, 2007 Yannick Le Guédart, 2011 Julien Issler
+ * @copyright 2011-2024 Laurent Jouanneau, 2007 Yannick Le Guédart, 2011 Julien Issler
  *
  * @see        https://jelix.org
  * @licence     GNU Lesser General Public Licence see LICENCE file or http://www.gnu.org/licenses/lgpl.html
@@ -11,7 +11,21 @@
 namespace Jelix\Profiles;
 
 /**
+ * Manage the list of profiles and optionally connectors that are using these profiles
  *
+ * It contains all profiles and their parameters. It allows to retrieve a specific profile.
+ *
+ * A profile has a category (for example: database connection), a name, and a list of parameters.
+ *
+ * ProfilesContainer allows also to manage connectors. Connectors are objects that are using a profile.
+ * For example, for a profile that contain access parameters to a database, a connector will be an object allowing
+ * to query the corresponding database, and configured using the parameters of the profile.
+ *
+ * Connectors are provided by the code using ProfilesContainer, or they can be managed directly by ProfilesContainer,
+ * via the ProfilesReader plugins implementing the ProfileInstancePluginInterface interface.
+ *
+ * Connectors objects are stored into an internal pool. Their lifetime is the duration of the process of the http request.
+ * So they are managed as singletons, so they are not recreated each time you want to retrieve them from ProfilesContainer.
  */
 class ProfilesContainer
 {
@@ -36,6 +50,7 @@ class ProfilesContainer
     /**
      * ProfilesContainer constructor.
      * @param array $profiles profiles data, formated by a ProfilesReader object
+     * @param ProfilesReader $profilesReader the profiles reader, to retrieve plugins that can instantiate connectors.
      */
     public function __construct($profiles, ProfilesReader $profilesReader = null)
     {
@@ -43,8 +58,18 @@ class ProfilesContainer
         $this->reader = $profilesReader;
     }
 
+    protected function getPlugin($category)
+    {
+        if ($this->reader) {
+            $plugin = $this->reader->getPlugin($category);
+        } else {
+            $plugin = new ReaderPlugin($category);
+        }
+        return $plugin;
+    }
+
     /**
-     * load properties of a profile.
+     * Gives properties of a profile.
      *
      * A profile is a section in the profiles.ini.php file. Profiles are belong
      * to a category. Each section names is composed by "category:profilename".
@@ -88,27 +113,40 @@ class ProfilesContainer
 
 
     /**
-     * add an object in the objects pool, corresponding to a profile.
+     * Adds a connector into the objects pool, corresponding to a profile.
      *
      * @param string $category the profile category
      * @param string $name     the name of the profile  (value of _name in the retrieved profile)
-     * @param object $obj      the object to store
+     * @param object $obj      the connector to store
      * @param mixed  $object
+     */
+    public function storeConnectorInPool($category, $name, $object)
+    {
+        $this->objectPool[$category][$name] = $object;
+    }
+
+    /**
+     * @deprecated use storeConnectorInPool instead
      */
     public function storeInPool($category, $name, $object)
     {
         $this->objectPool[$category][$name] = $object;
     }
 
+
     /**
-     * get an object from the objects pool, corresponding to a profile.
+     * Returns the connector that is using the given profile, from the pool managed by ProfilesContainer.
+     *
+     * The object is supposed to be created by `getConnector`, `getConnectorFromCallback` or previously
+     * given to `storeConnectorInPool`.
      *
      * @param string $category the profile category
-     * @param string $name     the name of the profile (value of _name in the retrieved profile)
+     * @param string $name     the name of the profile. It should not correspond to a profile alias, so it should
+     *                         be the value of _name in the retrieved profile.
      *
-     * @return null|object the stored object
+     * @return null|object the stored connector. Null if it does not exist.
      */
-    public function getFromPool($category, $name)
+    public function getConnectorFromPool($category, $name)
     {
         if (isset($this->objectPool[$category][$name])) {
             return $this->objectPool[$category][$name];
@@ -118,21 +156,37 @@ class ProfilesContainer
     }
 
     /**
-     * add an object in the objects pool, corresponding to a profile
-     * or store the object retrieved from the function, which accepts a profile
-     * as parameter (array).
-     *
-     * @param string   $category  the profile category
-     * @param string   $name      the name of the profile (will be given to get())
-     * @param callable $function  the function name called to retrieved the object. It uses call_user_func.
-     * @param bool     $noDefault if true and if the profile doesn't exist, throw an error instead of getting the default profile
-     * @param mixed    $nodefault
-     *
-     * @return null|object the stored object
+     * @deprecated use getConnectorFromPool instead
+     */
+    public function getFromPool($category, $name)
+    {
+        return $this->getConnectorFromPool($category, $name);
+    }
+
+    /**
+     * @deprecated use getConnectorFromCallback instead
      */
     public function getOrStoreInPool($category, $name, $function, $nodefault = false)
     {
-        $profile = $this->get($category, $name, $nodefault);
+        return $this->getConnectorFromCallback($category, $name, $function, $nodefault);
+    }
+
+    /**
+     * Returns the connector that is using the given profile.
+     *
+     * If it does not exist yet into the object pool, the connector has to be instantiated by the given callback function.
+     *
+     * @param string   $category  the profile category
+     * @param string   $name      the name of the profile (will be given to get())
+     * @param callable $function  the function name called to retrieve the object. It uses call_user_func. The function
+     *                            should accept an array containing the profile parameters, and returns an object.
+     * @param bool     $noDefault if true and if the profile doesn't exist, throw an error instead of getting the default profile
+     *
+     * @return null|object the connector, or null if the callback function did not create it.
+     */
+    public function getConnectorFromCallback($category, $name, $function, $noDefault = false)
+    {
+        $profile = $this->get($category, $name, $noDefault);
         if (isset($this->objectPool[$category][$profile['_name']])) {
             return $this->objectPool[$category][$profile['_name']];
         }
@@ -145,33 +199,67 @@ class ProfilesContainer
     }
 
     /**
-     * create a temporary new profile.
+     * Returns the connector that is using the given profile.
+     *
+     * If it does not exist yet, the object will be created by the ProfilesReader plugin corresponding to the
+     * category of the profiles. The plugin must implements the ProfileInstancePluginInterface interface.
+     *
+     * @param string   $category  the profile category
+     * @param string   $name      the name of the profile (will be given to get())
+     * @param bool     $noDefault if true and if the profile doesn't exist, throw an error instead of getting the default profile
+     *
+     * @return null|object the connector object, or null if the plugin cannot create it.
+     */
+    public function getConnector($category, $name, $noDefault = false)
+    {
+        $profile = $this->get($category, $name, $noDefault);
+        if (isset($this->objectPool[$category][$profile['_name']])) {
+            return $this->objectPool[$category][$profile['_name']];
+        }
+        $plugin = $this->getPlugin($category);
+        if ($plugin instanceof ProfileInstancePluginInterface) {
+            $obj = $plugin->getInstanceForPool($name, $profile);
+            if ($obj) {
+                $this->objectPool[$category][$profile['_name']] = $obj;
+            }
+        }
+        else {
+            $obj = null;
+        }
+
+        return $obj;
+    }
+
+
+    /**
+     * Creates a temporary profile.
+     *
+     * The lifetime of the profile is the duration of the PHP script.
      *
      * @param string       $category the profile category
      * @param string       $name     the name of the profile
      * @param array|string $params   parameters of the profile. key=parameter name, value=parameter value.
-     *                               we can also indicate a name of an other profile, to create an alias
+     *                               Or a name of another profile, to create an alias
      *
      * @throws Exception
      */
-    public function createVirtualProfile($category, $name, $params)
+    public function createVirtualProfile($category, $name, $paramsOrAlias)
     {
         if ($name == '') {
             throw new Exception('The name of a virtual profile for "'.$category.'" is empty');
         }
 
-        if (is_string($params)) {
-            if (isset($this->profiles[$category][$params])) {
-                $this->profiles[$category][$name] = $this->profiles[$category][$params];
+        $plugin = $this->getPlugin($category);
+
+        if (is_string($paramsOrAlias)) {
+            // this is an alias
+            if (isset($this->profiles[$category][$paramsOrAlias])) {
+                $this->profiles[$category][$name] = $this->profiles[$category][$paramsOrAlias];
             } else {
-                throw new Exception('Unknown profile "'.$params.'" for "'.$category.'"');
+                throw new Exception('Unknown profile "'.$paramsOrAlias.'" for "'.$category.'"');
             }
         } else {
-            if ($this->reader) {
-                $plugin = $this->reader->getPlugin($category);
-            } else {
-                $plugin = new ReaderPlugin($category);
-            }
+            // this is a parameters array
 
             if (isset($this->profiles[$category]['__common__'])) {
                 $plugin->setCommon($this->profiles[$category]['__common__']);
@@ -179,24 +267,45 @@ class ProfilesContainer
             if (isset($this->profiles[$category])) {
                 $plugin->addProfiles($this->profiles[$category]);
             }
-            $plugin->addProfile($name, $params);
+            $plugin->addProfile($name, $paramsOrAlias);
             $plugin->getProfiles($this->profiles);
         }
+
         // close existing connection with the same pool name
-        unset($this->objectPool[$category][$name]);
+        if (isset($this->objectPool[$category][$name])) {
+            if ($plugin instanceof ProfileInstancePluginInterface) {
+                $plugin->closeInstanceForPool($name, $this->objectPool[$category][$name]);
+            }
+            unset($this->objectPool[$category][$name]);
+        }
         if (gc_enabled()) {
             gc_collect_cycles();
         }
     }
 
     /**
-     * clear the loaded profiles to force to reload the profiles file.
-     * WARNING: it destroys all objects stored in the pool!
+     * Delete all loaded profiles to force to reload the profiles file.
+     *
+     * WARNING: it destroys all connectors stored in the pool! If they are instantiated by a reader plugins, they will
+     * be also "terminated" by the corresponding plugin.
      */
     public function clear()
     {
+        // emptying the objectPool array and calling gc_collect_cycles (as it was done in the past), is not always enough.
+        // It is more robust to close explicitly connections. This is why `closeInstanceForPool` is called on
+        // plugins that implements it.
+        foreach($this->objectPool as $category => $connectionObjects) {
+            $plugin = $this->getPlugin($category);
+            if ($plugin instanceof ProfileInstancePluginInterface) {
+                foreach($connectionObjects as $name => $obj) {
+                    $plugin->closeInstanceForPool($name, $obj);
+                }
+            }
+        }
+
         $this->profiles = null;
         $this->objectPool = array();
+
         if (gc_enabled()) {
             gc_collect_cycles();
         }

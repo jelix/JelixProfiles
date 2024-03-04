@@ -1,6 +1,19 @@
 Changelog
 =========
 
+Next
+----
+
+* New interface `ProfilePluginInterface` for plugins.
+  Plugins should implement this interface. This is already the case for plugins inheriting from ReaderPlugin.
+* New interface `ProfileInstancePluginInterface` for plugins. It allows plugins to implement methods to 
+  instantiate and terminate connector objects. It is an alternative to the callback given to `ProfilesContainer::getOrStoreInPool()`
+* New method `ProfilesContainer::getConnector()`, used to retrieve a connector object from plugins.
+* New method `ProfilesContainer::getConnectorFromCallback()`, it replaces `ProfilesContainer::getOrStoreInPool()` which is deprecated
+* New method `ProfilesContainer::storeConnectorInPool()`, it replaces `ProfilesContainer::storeInPool()` which is deprecated
+* New method `ProfilesContainer::getConnectorFromPool()`, it replaces `ProfilesContainer::getFromPool()` which is deprecated
+
+
 Version 1.2.1
 -------------
 

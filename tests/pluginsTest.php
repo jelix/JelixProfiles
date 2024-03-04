@@ -1,19 +1,5 @@
 <?php
 
-use \Jelix\Profiles\ProfilesContainer;
-
-class myReaderPlugin extends \Jelix\Profiles\ReaderPlugin
-{
-    protected function consolidate($profile)
-    {
-        if (isset($profile['changeme'])) {
-            $profile['changeme'] = 'cool';
-        }
-        return $profile;
-    }
-}
-
-
 class pluginsTest extends \PHPUnit\Framework\TestCase
 {
     function testPluginAsObject()

@@ -164,13 +164,13 @@ class profilesContainerTest extends \PHPUnit\Framework\TestCase
         $reader = new \Jelix\Profiles\ProfilesReader();
         $profiles = $reader->readFromArray($allProfiles);
 
-        $this->assertNull($profiles->getFromPool('foo', 'bar'));
+        $this->assertNull($profiles->getConnectorFromPool('foo', 'bar'));
 
-        $profiles->storeInPool('foo', 'bar', 'a value');
-        $this->assertEquals('a value', $profiles->getFromPool('foo', 'bar'));
+        $profiles->storeConnectorInPool('foo', 'bar', 'a value');
+        $this->assertEquals('a value', $profiles->getConnectorFromPool('foo', 'bar'));
 
         $profiles->clear();
-        $this->assertNull($profiles->getFromPool('foo', 'bar'));
+        $this->assertNull($profiles->getConnectorFromPool('foo', 'bar'));
 
     }
 
@@ -180,16 +180,47 @@ class profilesContainerTest extends \PHPUnit\Framework\TestCase
 
         try {
             $this->assertEquals('result:array:foo',
-                $profiles->getOrStoreInPool('foo', 'new', array($this, '_getObj')));
+                $profiles->getConnectorFromCallback('foo', 'new', array($this, '_getObj')));
             $this->fail();
         } catch(\Jelix\Profiles\Exception $e) {
             $this->assertEquals('Unknown profile "new" for "foo"', $e->getMessage());
         }
         $profiles->createVirtualProfile('foo', 'new', array('bla'=>'ok'));
         $this->assertEquals('result:array:new',
-            $profiles->getOrStoreInPool('foo', 'new', array($this, '_getObj')));
+            $profiles->getConnectorFromCallback('foo', 'new', array($this, '_getObj')));
 
-        $this->assertEquals('result:array:new', $profiles->getFromPool('foo', 'new'));
+        $this->assertEquals('result:array:new', $profiles->getConnectorFromPool('foo', 'new'));
+    }
+
+    function testGetStorePoolWithInstancePlugin()
+    {
+
+        $thePlugin = new myReaderPlugin('foo');
+        $reader = new \Jelix\Profiles\ProfilesReader(
+            array('foo'=> $thePlugin)
+        );
+        $profiles = $reader->readFromArray(array(
+            'foo'=>array('default'=>'server1'),
+            'foo:server1'=> array(
+                'host' => 'jelix'
+            )
+        ));
+
+        $obj = $profiles->getConnector('foo', 'new');
+        $this->assertIsObject($obj);
+        $this->assertInstanceOf('myInstanceForFooProfile', $obj);
+        $this->assertEquals(array(
+            'host' => 'jelix',
+            '_name' => 'server1'
+        ), $obj->getParameters());
+        $this->assertFalse($obj->isClosed());
+
+        $this->assertNull($profiles->getConnectorFromPool('foo', 'new'));
+        $this->assertNotNull($profiles->getConnectorFromPool('foo', 'server1'));
+        $profiles->clear();
+        $this->assertTrue($obj->isClosed());
+        $this->assertNull($profiles->getConnectorFromPool('foo', 'new'));
+        $this->assertNull($profiles->getConnectorFromPool('foo', 'server1'));
     }
 
     public function _getObj($profile){
