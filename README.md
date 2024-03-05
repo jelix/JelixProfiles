@@ -55,7 +55,7 @@ useful for example when two library use a different profile name, but you want
 that these libraries use the same connection parameters.
 
 Aliases are defined in a section whose name contains only the name of the
-connection type. An example with JelixDatabase, defining the alias "jacl2_profile' for the
+connection type. An example with JelixDatabase, defining the alias "jacl2_profile" for the
 default profile:
 
 ```ini
@@ -91,7 +91,7 @@ You can of course redefine these parameters in profiles.
 
 ## Using environment variables
 
-Ini files are readed by the @@parse_ini_file@@ function, and so specific syntaxes
+Ini files are readed by the `parse_ini_file` function, and so specific syntaxes
 are available to indicate values coming from outside the ini file.
 
 - You can indicate PHP constants:
@@ -290,8 +290,7 @@ $reader = new \Jelix\Profiles\ProfilesReader(function($category) {
     if ($category == 'db') {
         return new myDbPlugin();
     }
-    // always return a ReaderPlugin object for unsupported plugins. 
-    return new \Jelix\Profiles\ReaderPlugin($category);
+    return null;
 });
 ```
 
@@ -327,7 +326,7 @@ terminate the connector object. For example, if the connector object maintain a 
 `closeInstanceForPool()` should call its method that close the connection.
 
 ```php
-class myDbPlugin extends \Jelix\Profiles\ReaderPlugin
+class myDbPlugin extends \Jelix\Profiles\ReaderPlugin implements 
 {
     protected function consolidate($profile)
     {

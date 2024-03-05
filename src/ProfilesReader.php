@@ -12,9 +12,11 @@ namespace Jelix\Profiles;
 class ProfilesReader
 {
     /**
-     * @var array|callable
+     * @var array
      */
     protected $plugins = [];
+
+    protected $pluginsCreator = null;
 
     /**
      * ProfilesContainer constructor.
@@ -28,7 +30,12 @@ class ProfilesReader
      */
     public function __construct($plugins = [])
     {
-        $this->plugins = $plugins;
+        if (is_callable($plugins)) {
+            $this->pluginsCreator = $plugins;
+        }
+        else if(is_array($plugins)) {
+            $this->plugins = $plugins;
+        }
     }
 
     /**
@@ -115,20 +122,21 @@ class ProfilesReader
      */
     public function getPlugin($name)
     {
-        if (is_array($this->plugins)) {
-            if (!isset($this->plugins[$name])) {
-                $this->plugins[$name] = new ReaderPlugin($name);
-            } elseif (is_string($this->plugins[$name])) {
-                $className = $this->plugins[$name];
-                $this->plugins[$name] = new $className($name);
+        if (!isset($this->plugins[$name])) {
+            if ($this->pluginsCreator !== null) {
+                $plugin = call_user_func($this->pluginsCreator, $name);
+                if (!$plugin) {
+                    $plugin = new ReaderPlugin($name);
+                }
             }
-            return $this->plugins[$name];
+            else {
+                $plugin = new ReaderPlugin($name);
+            }
+            $this->plugins[$name] = $plugin;
+        } elseif (is_string($this->plugins[$name])) {
+            $className = $this->plugins[$name];
+            $this->plugins[$name] = new $className($name);
         }
-        if (is_callable($this->plugins)) {
-            return call_user_func($this->plugins, $name);
-        }
-        else {
-            return new ReaderPlugin($name);
-        }
+        return $this->plugins[$name];
     }
 }

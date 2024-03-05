@@ -38,7 +38,7 @@ class ProfilesContainer
     /**
      * pool of objects loaded for profiles.
      *
-     * @var object[]
+     * @var object[][]
      */
     protected $objectPool = array();
 
@@ -187,13 +187,11 @@ class ProfilesContainer
     public function getConnectorFromCallback($category, $name, $function, $noDefault = false)
     {
         $profile = $this->get($category, $name, $noDefault);
-        if (isset($this->objectPool[$category][$profile['_name']])) {
+        if (isset($this->objectPool[$category]) && array_key_exists($profile['_name'], $this->objectPool[$category])) {
             return $this->objectPool[$category][$profile['_name']];
         }
         $obj = call_user_func($function, $profile);
-        if ($obj) {
-            $this->objectPool[$category][$profile['_name']] = $obj;
-        }
+        $this->objectPool[$category][$profile['_name']] = $obj;
 
         return $obj;
     }
@@ -213,20 +211,17 @@ class ProfilesContainer
     public function getConnector($category, $name, $noDefault = false)
     {
         $profile = $this->get($category, $name, $noDefault);
-        if (isset($this->objectPool[$category][$profile['_name']])) {
+        if (isset($this->objectPool[$category]) && array_key_exists($profile['_name'], $this->objectPool[$category])) {
             return $this->objectPool[$category][$profile['_name']];
         }
         $plugin = $this->getPlugin($category);
         if ($plugin instanceof ProfileInstancePluginInterface) {
             $obj = $plugin->getInstanceForPool($name, $profile);
-            if ($obj) {
-                $this->objectPool[$category][$profile['_name']] = $obj;
-            }
         }
         else {
             $obj = null;
         }
-
+        $this->objectPool[$category][$profile['_name']] = $obj;
         return $obj;
     }
 
@@ -298,7 +293,9 @@ class ProfilesContainer
             $plugin = $this->getPlugin($category);
             if ($plugin instanceof ProfileInstancePluginInterface) {
                 foreach($connectionObjects as $name => $obj) {
-                    $plugin->closeInstanceForPool($name, $obj);
+                    if ($obj != null) {
+                        $plugin->closeInstanceForPool($name, $obj);
+                    }
                 }
             }
         }
