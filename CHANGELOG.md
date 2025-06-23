@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Next
-----
+Version 1.3.0
+-------------
 
 * New interface `ProfilePluginInterface` for plugins.
   Plugins should implement this interface. This is already the case for plugins inheriting from ReaderPlugin.

@@ -26,12 +26,12 @@ NoSQL databases, SOAP web services, cache etc.
 
 ## profile parameters
 
-Each section correspond to a profile. A profile is a set of parameters of a 
+Each section corresponds to a profile. A profile is a set of parameters of a 
 single connection. Sections names are composed of two names, separated by a ":":
 
-- first name is the name of the connection type, (often corresponding to 
+- First name is the name of the connection type, (often corresponding to 
   the composant name)
-- second name is a name of your choice. However, two names have a special
+- Second name is a name of your choice. However, two names have a special
   meaning: `default` indicates the default profile to use if the profile name
   is not given. And `__common__`, described below. 
 
@@ -51,7 +51,7 @@ password=mypassword
 ## Profile alias
 
 You can define some profile alias, i.e. more than one name to a profile. This is
-useful for example when two library use a different profile name, but you want
+useful for example when two libraries use a different profile name, but you want
 that these libraries use the same connection parameters.
 
 Aliases are defined in a section whose name contains only the name of the
@@ -69,7 +69,7 @@ login= mylogin
 password=mypassword
 ```
 
-An alias should not linked to an other alias.
+An alias should not be linked to another alias.
 
 ## Common parameters
 
@@ -86,7 +86,7 @@ host=my.server.example.com
 persistant=on
 ```
 
-You can of course redefine these parameters in profiles.
+Of course you can redefine these parameters in profiles.
 
 
 ## Using environment variables
@@ -212,15 +212,15 @@ Of course, all parameters defined in a `__common__` profile apply on virtual pro
 
 # Using plugins to check parameters
 
-The connector, the object that use a profile, may expect to have specific parameters. It may have to check if parameters are ok
+The connector, the object that uses a profile, may expect to have specific parameters. It may have to check if parameters are ok
 before using them. It even may have to "calculate" some other parameters, depending on values it finds into given parameters.
 
-To avoid to do these check or calculation each time the connector is instantiated, there is a solution into JelixProfiles
+To avoid doing these checks or calculation each time the connector is instantiated, there is a solution into JelixProfiles
 to process these things during the first read of the profiles file, then final parameters are stored into the
 cache file of profiles. 
 
 You can provide a plugin that will do these checks and calculations for a specific category of profiles.
-This is a class which should inherits from `Jelix\Profiles\ReaderPlugin`, and implements the `consolidate` method
+This is a class that should inherit from `Jelix\Profiles\ReaderPlugin`, and implements the `consolidate` method
 which receives the profile parameters as an array, and which returns the completed profile.
 
 Example:
@@ -272,8 +272,8 @@ $reader = new \Jelix\Profiles\ProfilesReader([
 ]);
 ```
 
-Another way, is to provide a callback function which will return the plugin corresponding to the given category.
-It is useful if your plugin have a specific constructor, or if the class is loaded in a specific way.
+Another way is to provide a callback function which will return the plugin corresponding to the given category.
+It is useful if your plugin has a specific constructor, or if the class is loaded in a specific way.
 
 ```php
 
@@ -322,8 +322,8 @@ In order to use this method, the plugin must implement the `Jelix\Profiles\Profi
 two methods, `getInstanceForPool($name, $profile)` and `closeInstanceForPool($name, $instance)`.
 
 The first one is to instantiate the connector object. It is called by `getConnector`. The second method should
-terminate the connector object. For example, if the connector object maintain a connection to a database, 
-`closeInstanceForPool()` should call its method that close the connection.
+terminate the connector object. For example, if the connector object maintains a connection to a database, 
+`closeInstanceForPool()` should call its methods that close the connection.
 
 ```php
 class myDbPlugin extends \Jelix\Profiles\ReaderPlugin implements 
