@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Version 1.3.1
+-------------
+
+- Fix deprecation notice with PHP 8.4
+
 Version 1.3.0
 -------------
 
