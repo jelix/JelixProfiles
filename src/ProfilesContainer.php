@@ -52,7 +52,7 @@ class ProfilesContainer
      * @param array $profiles profiles data, formated by a ProfilesReader object
      * @param ProfilesReader $profilesReader the profiles reader, to retrieve plugins that can instantiate connectors.
      */
-    public function __construct($profiles, ProfilesReader $profilesReader = null)
+    public function __construct($profiles, ?ProfilesReader $profilesReader = null)
     {
         $this->profiles = $profiles;
         $this->reader = $profilesReader;
